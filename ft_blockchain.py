@@ -121,12 +121,13 @@ class Blockchain:
         :param last_proof: <int>
         :return: <int>
         """
-        proof = 0
-        while self.valid_proof(last_proof, proof) is False:
+        proof = last_proof
+        self.end_hash=str("42" * (1 + (len(self.chain) // 10)))
+        while self.valid_proof(last_proof, proof, self.end_hash) is False:
             proof += 1
         return proof
     @staticmethod
-    def valid_proof(last_proof, proof):
+    def valid_proof(last_proof, proof, end_hash):
         """
         Validates the Proof: Does hash(last_proof, proof) contain 4 leading zeroes?
         :param last_proof: <int> Previous Proof
@@ -135,7 +136,9 @@ class Blockchain:
         """
         guess = f'{last_proof}{proof}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
-        return guess_hash[-4:] == '4242'
+        if (guess_hash[(-1) * (len(end_hash)):] == end_hash):
+            print(guess_hash)
+        return guess_hash[(-1) * (len(end_hash)):] == end_hash
 # Instantiate our Node
 app = Flask(__name__)
 # Generate a globally unique address for this node
@@ -214,7 +217,7 @@ def consensus():
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
+    parser.add_argument('-p', '--port', default=500, type=int, help='port to listen on')
     args = parser.parse_args()
     port = args.port
     app.run(host='0.0.0.0', port=port)
