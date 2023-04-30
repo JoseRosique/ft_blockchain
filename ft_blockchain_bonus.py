@@ -5,10 +5,11 @@ import random
 import json
 
 class Validator:
-    def __init__(self, name, address, balance):
+    def __init__(self, name, address, balance, stake):
         self.name = name
         self.address = address
         self.balance = balance
+        self.stake = stake
         
     def __repr__(self):
         return f"{self.name} ({self.address})"
@@ -17,31 +18,8 @@ class Validator:
         return {
             "name": self.name,
             "address": self.address,
-            "balance": self.balance
-        }
-
-class Block:
-    def __init__(self, transactions, prev_block_hash, validator):
-        self.transactions = transactions
-        self.timestamp = datetime.datetime.now()
-        self.prev_block_hash = prev_block_hash
-        self.validator = validator
-        self.hash = self.calculate_hash()
-        
-    def calculate_hash(self):
-        block_contents = str(self.timestamp) + str(self.prev_block_hash) + str(self.transactions) + str(self.validator.address)
-        return hashlib.sha256(block_contents.encode()).hexdigest()
-        
-    def __repr__(self):
-        return f"Block({self.hash}, {self.prev_block_hash}, {self.transactions}, {self.validator})"
-    
-    def to_dict(self):
-        return {
-            "timestamp": self.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-            "prev_block_hash": self.prev_block_hash,
-            "transactions": self.transactions,
-            "validator": self.validator.to_dict(),
-            "hash": self.hash
+            "balance": self.balance,
+            "stake": self.stake
         }
 
 class Block:
@@ -85,23 +63,19 @@ class Blockchain:
         for i in range(num_validators):
             name = f"Validator{i}"
             address = f"address{i}"
-            balance = random.randint(1, 100)
-            validators.append(Validator(name, address, balance))
+            balance = 1000
+            stake = random.randint(1, 100)
+            validators.append(Validator(name, address, balance, stake))
         return validators
     
     def select_validator(self):
-        total_stake = sum([v.balance for v in self.validators])
-        rand = random.uniform(0, total_stake)
-        selected_validator = None
+        total_stake = sum([v.stake for v in self.validators])
+        target = random.uniform(0, total_stake)
+        cum_stake = 0
         for validator in self.validators:
-            if validator.balance == 0:
-                validator.balance = 1  # Reset balance to 1 if it reaches 0
-            if rand < validator.balance:
-                selected_validator = validator
-                validator.balance -= 1  # Reduce balance by 1 for selected validator
-                break
-            rand -= validator.balance
-        return selected_validator
+            cum_stake += validator.stake
+            if cum_stake > target:
+                return validator
     
     def validate(self):
         for i in range(1, len(self.chain)):
@@ -130,7 +104,7 @@ class Blockchain:
         }
 
 # Create blockchain
-genesis_block = Block([], "0", Validator("Alice", "address1", 100))
+genesis_block = Block([], "0", Validator("Alice", "address1", 100, 50))
 blockchain = Blockchain(genesis_block, 5)
 
 # Create Flask app
